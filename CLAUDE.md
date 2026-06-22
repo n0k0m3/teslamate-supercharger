@@ -82,12 +82,8 @@ docker compose run --rm supercharger python -m teslamate_supercharger.backfill
 - No Dockerfile `HEALTHCHECK` — Docker/compose can't detect a stuck daemon
 - No log line when a session is skipped because cost is already set (useful for debugging re-runs)
 
-**Ops**
-- `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets must be added to the repo before the release workflow can push to Docker Hub
-- `charging.json` and `charging_fleet.json` are untracked in the repo and contain real VIN + session data — gitignore them
-
 **Nice to have**
-- Multi-arch image builds (arm64 for Raspberry Pi / NAS)
+- ~~Multi-arch image builds (arm64 for Raspberry Pi / NAS)~~ done
 
 <!-- code-review-graph MCP tools -->
 ## MCP Tools: code-review-graph

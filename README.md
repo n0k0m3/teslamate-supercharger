@@ -209,5 +209,5 @@ INFO teslamate_supercharger.mqtt_client: Connected to MQTT broker
 
 - [ ] Configurable startup backfill window (currently hardcoded to 24h — if the daemon is down longer, sessions are missed)
 - [ ] Docker health check so compose can detect a stuck daemon
-- [ ] Multi-arch image builds (arm64 for Raspberry Pi / NAS deployments)
+- [x] Multi-arch image builds (arm64 for Raspberry Pi / NAS deployments)
 
