@@ -1,0 +1,39 @@
+# Add this service to your existing TeslaMate docker-compose.yml.
+# It shares TeslaMate's database, MQTT broker, and Docker network.
+#
+# Required env vars (set in your .env file alongside docker-compose.yml):
+#   TESLAMATE_DB_PASSWORD  — same value as TeslaMate's DATABASE_PASS
+#   ENCRYPTION_KEY         — same value as TeslaMate's ENCRYPTION_KEY
+
+services:
+  supercharger:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - database
+      - mosquitto
+      - teslamate
+    environment:
+      - DATABASE_HOST=database
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=teslamate
+      - DATABASE_USER=teslamate
+      - DATABASE_PASS=${TESLAMATE_DB_PASSWORD}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      # Optional — set if your MQTT broker requires auth:
+      # - MQTT_USERNAME=
+      # - MQTT_PASSWORD=
+      # Tuning — how long to wait after session complete before calling Tesla API:
+      - API_FETCH_DELAY_SECONDS=30
+      # How many minutes either side of the trigger time to search for a matching session:
+      - SESSION_MATCH_WINDOW_MINUTES=15
+    networks:
+      - teslamate
+
+# The network name must match what your TeslaMate stack uses.
+# Verify with: docker network ls | grep teslamate
+networks:
+  teslamate:
+    external: true
