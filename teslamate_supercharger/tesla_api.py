@@ -13,9 +13,11 @@ _HISTORY_URL = "https://www.tesla.com/teslaaccount/charging/api/history"
 _TOKEN_URL = "https://auth.tesla.com/oauth2/v3/token"
 
 _HEADERS = {
-    "User-Agent": "TeslaApp/4.36.0",
+    "User-Agent": "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
     "X-Tesla-User-Agent": "TeslaApp/4.36.0",
     "Content-Type": "application/json",
+    "Origin": "https://www.tesla.com",
+    "Referer": "https://www.tesla.com/teslaaccount/charging",
 }
 
 
