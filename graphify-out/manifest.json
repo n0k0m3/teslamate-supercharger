@@ -1,0 +1,97 @@
+{
+  "/Users/n0k0m3/Programming/teslamate-supercharger/.claude/settings.json": {
+    "mtime": 1782137502.114174,
+    "ast_hash": "fe42a2b710b80be5e95b1bb4a344c739",
+    "semantic_hash": "fe42a2b710b80be5e95b1bb4a344c739"
+  },
+  "/Users/n0k0m3/Programming/teslamate-supercharger/.claude/settings.local.json": {
+    "mtime": 1782137574.3037114,
+    "ast_hash": "4253ab55b461626b5a0ad1d0322ea945",
+    "semantic_hash": "4253ab55b461626b5a0ad1d0322ea945"
+  },
+  "/Users/n0k0m3/Programming/teslamate-supercharger/.mcp.json": {
+    "mtime": 1782137489.0727103,
+    "ast_hash": "737eeb434b4f40c6618b9ac40e25f146",
+    "semantic_hash": "737eeb434b4f40c6618b9ac40e25f146"
+  },
+  "/Users/n0k0m3/Programming/teslamate-supercharger/charging.json": {
+    "mtime": 1781893277.6339746,
+    "ast_hash": "ca57e0ec0e4372a9070c31933ac967d9",
+    "semantic_hash": "ca57e0ec0e4372a9070c31933ac967d9"
+  },
+  "/Users/n0k0m3/Programming/teslamate-supercharger/teslamate_supercharger/__init__.py": {
+    "mtime": 1782137242.3850942,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/n0k0m3/Programming/teslamate-supercharger/teslamate_supercharger/config.py": {
+    "mtime": 1782137242.3852835,
+    "ast_hash": "c288ddec5e09aa7c447eb22abc6299c9",
+    "semantic_hash": "c288ddec5e09aa7c447eb22abc6299c9"
+  },
+  "/Users/n0k0m3/Programming/teslamate-supercharger/teslamate_supercharger/crypto.py": {
+    "mtime": 1782137242.3854198,
+    "ast_hash": "5832fd4b7fe51982e7206144c0b8d0ca",
+    "semantic_hash": "5832fd4b7fe51982e7206144c0b8d0ca"
+  },
+  "/Users/n0k0m3/Programming/teslamate-supercharger/teslamate_supercharger/db.py": {
+    "mtime": 1782137242.3855896,
+    "ast_hash": "886f891ca89a5fb5bbe9c28b61af9529",
+    "semantic_hash": "886f891ca89a5fb5bbe9c28b61af9529"
+  },
+  "/Users/n0k0m3/Programming/teslamate-supercharger/teslamate_supercharger/main.py": {
+    "mtime": 1782137242.3857512,
+    "ast_hash": "0b9fbdbe84ff6f8513369f1fdaeffe86",
+    "semantic_hash": "0b9fbdbe84ff6f8513369f1fdaeffe86"
+  },
+  "/Users/n0k0m3/Programming/teslamate-supercharger/teslamate_supercharger/mqtt_client.py": {
+    "mtime": 1782137242.3858693,
+    "ast_hash": "6b10fd1e8fbb8182516dbb16def9d43e",
+    "semantic_hash": "6b10fd1e8fbb8182516dbb16def9d43e"
+  },
+  "/Users/n0k0m3/Programming/teslamate-supercharger/teslamate_supercharger/session_matcher.py": {
+    "mtime": 1782137242.3859875,
+    "ast_hash": "a62258a026099118e8fc483088dd08c1",
+    "semantic_hash": "a62258a026099118e8fc483088dd08c1"
+  },
+  "/Users/n0k0m3/Programming/teslamate-supercharger/teslamate_supercharger/tesla_api.py": {
+    "mtime": 1782137242.386104,
+    "ast_hash": "a9df49fe10ef011d0b6cc48f126c1ed0",
+    "semantic_hash": "a9df49fe10ef011d0b6cc48f126c1ed0"
+  },
+  "/Users/n0k0m3/Programming/teslamate-supercharger/.claude/skills/debug-issue/skill.md": {
+    "mtime": 1782137502.107062,
+    "ast_hash": "f6ca42b7fce135a9dbe1b01f651e35a4",
+    "semantic_hash": "f6ca42b7fce135a9dbe1b01f651e35a4"
+  },
+  "/Users/n0k0m3/Programming/teslamate-supercharger/.claude/skills/explore-codebase/skill.md": {
+    "mtime": 1782137502.1068473,
+    "ast_hash": "72bcdd4382c8389e22970964cbdf73e3",
+    "semantic_hash": "72bcdd4382c8389e22970964cbdf73e3"
+  },
+  "/Users/n0k0m3/Programming/teslamate-supercharger/.claude/skills/refactor-safely/skill.md": {
+    "mtime": 1782137502.1071253,
+    "ast_hash": "48b6d7fd4e9a3dcef923e9e32f8a75d0",
+    "semantic_hash": "48b6d7fd4e9a3dcef923e9e32f8a75d0"
+  },
+  "/Users/n0k0m3/Programming/teslamate-supercharger/.claude/skills/review-changes/skill.md": {
+    "mtime": 1782137502.1069226,
+    "ast_hash": "255133a497797178b42746808b2fadc9",
+    "semantic_hash": "255133a497797178b42746808b2fadc9"
+  },
+  "/Users/n0k0m3/Programming/teslamate-supercharger/CLAUDE.md": {
+    "mtime": 1782137496.5070786,
+    "ast_hash": "3318b677ecc88109f831bc8eaff7abc9",
+    "semantic_hash": "3318b677ecc88109f831bc8eaff7abc9"
+  },
+  "/Users/n0k0m3/Programming/teslamate-supercharger/docker-compose.yml": {
+    "mtime": 1782137242.38487,
+    "ast_hash": "2c67fe31199788dcf06098de207e88a5",
+    "semantic_hash": "2c67fe31199788dcf06098de207e88a5"
+  },
+  "/Users/n0k0m3/Programming/teslamate-supercharger/requirements.txt": {
+    "mtime": 1782137242.3850014,
+    "ast_hash": "86f6c0f30699e17dbe676296dabfb7e0",
+    "semantic_hash": "86f6c0f30699e17dbe676296dabfb7e0"
+  }
+}
