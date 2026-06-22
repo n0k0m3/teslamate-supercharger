@@ -38,7 +38,7 @@ The data flow on each Supercharger session:
 MQTT (TeslaMate publishes car state)
   → MQTTClient detects charging_state: Charging/Starting → Complete while fast_charger_present=true
   → Daemon._on_supercharge_complete(car_id) [dispatched to ThreadPoolExecutor after API_FETCH_DELAY_SECONDS]
-  → tesla_api.fetch_charging_history_with_refresh(access_token, refresh_token, vin)
+  → tesla_api.fetch_charging_history() [Fleet API, page 1, filters by VIN client-side]
   → session_matcher.find_matching_session() [matches by stop time within SESSION_MATCH_WINDOW_MINUTES]
   → session_matcher.extract_session_fields()
   → db.upsert_supercharger_session() + db.update_charging_process_cost()
@@ -46,15 +46,24 @@ MQTT (TeslaMate publishes car state)
 
 On startup, the daemon also backfills any `charging_processes` rows from the last 24 hours that still have `cost IS NULL`.
 
+For a full historical backfill (all 220+ sessions), run the standalone script:
+
+```bash
+uv run python -m teslamate_supercharger.backfill
+# or via Docker:
+docker compose run --rm supercharger python -m teslamate_supercharger.backfill
+```
+
 ### Module responsibilities
 
 - **`main.py`** — `Daemon` class orchestrates startup and the MQTT→API→DB pipeline. `main()` is the entry point.
+- **`backfill.py`** — Standalone one-shot script (`python -m teslamate_supercharger.backfill`). Fetches all pages of Fleet API history and upserts every session. Safe to re-run.
 - **`config.py`** — All configuration comes from environment variables. `Config.from_env()` raises `ConfigError` on missing required vars.
 - **`mqtt_client.py`** — Subscribes to `teslamate/cars/+/{charging_state,fast_charger_present,charger_power}`. Maintains per-car state dict to detect the `Charging → Complete` transition. Fires callback only when `fast_charger_present=true`.
-- **`tesla_api.py`** — Acquires a Fleet API token via `client_credentials` grant from `fleet-auth.prd.vn.cloud.tesla.com` using `TESLA_CLIENT_ID`/`TESLA_CLIENT_SECRET`. Calls `GET /api/1/dx/charging/history` on `fleet-api.prd.{region}.vn.cloud.tesla.com`; returns all sessions for the account — VIN filtering is done client-side. Token lifetime is 8h; re-acquired on 401. See `charging_fleet.json` for a sample response.
-- **`session_matcher.py`** — Maps raw API response fields to DB columns. Field name constants (`_FIELD_*`) are defined at the top; update them if the Tesla API changes its response schema. Cost is summed from `fees[]` entries where `feeType` is `CHARGING` or `PARKING`.
+- **`tesla_api.py`** — Acquires a Fleet API token via `client_credentials` grant from `fleet-auth.prd.vn.cloud.tesla.com` using `TESLA_CLIENT_ID`/`TESLA_CLIENT_SECRET`. Token lifetime is 8h; re-acquired on 401. `fetch_charging_history()` fetches one page; `fetch_all_charging_history()` paginates all results. See `charging_fleet.json` for a sample response.
+- **`session_matcher.py`** — Maps Fleet API response fields to DB columns. Field name constants (`_FIELD_*`) are defined at the top; update if the API schema changes. Cost is summed from `fees[]` entries where `feeType` is `CHARGING` or `PARKING`. Energy is derived from `usageBase` where `uom=kwh`.
 - **`db.py`** — PostgreSQL via `psycopg2` thread-safe connection pool. `ensure_schema()` runs `CREATE TABLE IF NOT EXISTS supercharger_sessions` and `ALTER TABLE charging_processes ADD COLUMN IF NOT EXISTS cost` on every startup — safe to re-run.
-- **`crypto.py`** — Unused since switching to Fleet API auth. Kept for reference; can be removed.
+- **`crypto.py`** — Unused since switching to Fleet API auth. Can be deleted.
 
 ### Key coupling points with TeslaMate
 
