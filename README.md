@@ -13,7 +13,11 @@ When a Supercharger session ends, it fetches the cost and energy data and writes
 | Docker Hub | `n0k0m3/teslamate-supercharger` |
 | GitHub Container Registry | `ghcr.io/n0k0m3/teslamate-supercharger` |
 
-Available tags: `latest` (most recent release), `x.y.z` (specific release), `experimental` (latest `main` commit, may be unstable), `sha-{hash}` (GHCR only).
+Available tags:
+- `latest` — most recent release
+- `x.y.z` — specific release version
+- `experimental` — latest `main` commit (may be unstable)
+- `sha-{hash}` — specific commit build (GHCR only)
 
 ## Prerequisites
 
