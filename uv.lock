@@ -250,10 +250,10 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cryptography", specifier = "==42.0.8" },
-    { name = "paho-mqtt", specifier = "==2.1.0" },
-    { name = "psycopg2-binary", specifier = "==2.9.9" },
-    { name = "requests", specifier = "==2.32.3" },
+    { name = "cryptography", specifier = ">=42.0.8" },
+    { name = "paho-mqtt", specifier = ">=2.1.0" },
+    { name = "psycopg2-binary", specifier = ">=2.9.9" },
+    { name = "requests", specifier = ">=2.32.3" },
 ]
 
 [[package]]
