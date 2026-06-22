@@ -205,3 +205,9 @@ INFO teslamate_supercharger.mqtt_client: Connected to MQTT broker
 | `API_FETCH_DELAY_SECONDS` | no | `30` | Wait after session ends before calling Tesla API |
 | `SESSION_MATCH_WINDOW_MINUTES` | no | `15` | Time window for matching sessions to TeslaMate records |
 
+## Roadmap
+
+- [ ] Configurable startup backfill window (currently hardcoded to 24h — if the daemon is down longer, sessions are missed)
+- [ ] Docker health check so compose can detect a stuck daemon
+- [ ] Multi-arch image builds (arm64 for Raspberry Pi / NAS deployments)
+

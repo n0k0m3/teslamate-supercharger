@@ -71,6 +71,24 @@ docker compose run --rm supercharger python -m teslamate_supercharger.backfill
 - Reads and writes `charging_processes` table (adds `cost` column, links sessions by `end_date`)
 - Creates its own `supercharger_sessions` table with a FK to `charging_processes`
 
+## Backlog
+
+**Reliability**
+- `crypto.py` is dead code — delete it
+- Startup backfill window is hardcoded to 24h — if daemon is down longer, sessions are silently missed; make `BACKFILL_LOOKBACK_HOURS` a config var
+- Verify multi-car behaviour: `seen_car_ids` in `_backfill()` deduplicates by car, which is correct, but worth an end-to-end test
+
+**Observability**
+- No Dockerfile `HEALTHCHECK` — Docker/compose can't detect a stuck daemon
+- No log line when a session is skipped because cost is already set (useful for debugging re-runs)
+
+**Ops**
+- `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets must be added to the repo before the release workflow can push to Docker Hub
+- `charging.json` and `charging_fleet.json` are untracked in the repo and contain real VIN + session data — gitignore them
+
+**Nice to have**
+- Multi-arch image builds (arm64 for Raspberry Pi / NAS)
+
 <!-- code-review-graph MCP tools -->
 ## MCP Tools: code-review-graph
 
