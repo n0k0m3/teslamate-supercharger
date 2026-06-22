@@ -6,6 +6,15 @@ When a Supercharger session ends, it fetches the cost and energy data and writes
 - A new `supercharger_sessions` table
 - The `cost` column on TeslaMate's existing `charging_processes` table
 
+## Images
+
+| Registry | Image |
+|---|---|
+| Docker Hub | `n0k0m3/teslamate-supercharger` |
+| GitHub Container Registry | `ghcr.io/n0k0m3/teslamate-supercharger` |
+
+Available tags: `latest` (most recent release), `x.y.z` (specific release), `experimental` (latest `main` commit, may be unstable), `sha-{hash}` (GHCR only).
+
 ## Prerequisites
 
 - A running TeslaMate installation (Docker)
@@ -45,7 +54,7 @@ This is the recommended approach. The service joins TeslaMate's existing Docker 
 ```yaml
 services:
   supercharger:
-    image: ghcr.io/n0k0m3/teslamate-supercharger:latest
+    image: n0k0m3/teslamate-supercharger:latest
     restart: unless-stopped
     depends_on:
       - database
@@ -107,7 +116,7 @@ docker network ls | grep teslamate
 ```yaml
 services:
   supercharger:
-    image: ghcr.io/n0k0m3/teslamate-supercharger:latest
+    image: n0k0m3/teslamate-supercharger:latest
     restart: unless-stopped
     env_file: .env
     networks:
@@ -192,13 +201,3 @@ INFO teslamate_supercharger.mqtt_client: Connected to MQTT broker
 | `API_FETCH_DELAY_SECONDS` | no | `30` | Wait after session ends before calling Tesla API |
 | `SESSION_MATCH_WINDOW_MINUTES` | no | `15` | Time window for matching sessions to TeslaMate records |
 
-## Docker images
-
-| Registry | Image | Tags |
-|---|---|---|
-| GitHub Container Registry | `ghcr.io/n0k0m3/teslamate-supercharger` | `latest`, `x.y`, `x.y.z`, `experimental`, `sha-{hash}` |
-| Docker Hub | `n0k0m3/teslamate-supercharger` | `latest`, `x.y`, `x.y.z` |
-
-- `latest` — most recent release
-- `experimental` — latest commit on `main` (may be unstable)
-- `sha-{hash}` — specific commit build (GHCR only)
