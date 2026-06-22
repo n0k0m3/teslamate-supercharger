@@ -3,6 +3,15 @@ name: CI
 on:
   push:
     branches: [main]
+    paths:
+      - 'teslamate_supercharger/**'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - '.env.example'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.python-version'
+      - '.github/workflows/**'
 
 jobs:
   build:
