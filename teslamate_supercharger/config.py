@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 class ConfigError(Exception):
@@ -42,11 +42,12 @@ class Config:
     mqtt_username: str
     mqtt_password: str
 
-    encryption_key: str
+    tesla_client_id: str
+    tesla_client_secret: str
+    tesla_fleet_region: str
 
     api_fetch_delay_seconds: int
     session_match_window_minutes: int
-    debug_print_tokens: bool
 
     @classmethod
     def from_env(cls) -> Config:
@@ -60,8 +61,9 @@ class Config:
             mqtt_port=_int("MQTT_PORT", 1883),
             mqtt_username=_optional("MQTT_USERNAME"),
             mqtt_password=_optional("MQTT_PASSWORD"),
-            encryption_key=_require("ENCRYPTION_KEY"),
+            tesla_client_id=_require("TESLA_CLIENT_ID"),
+            tesla_client_secret=_require("TESLA_CLIENT_SECRET"),
+            tesla_fleet_region=_optional("TESLA_FLEET_REGION", "na"),
             api_fetch_delay_seconds=_int("API_FETCH_DELAY_SECONDS", 30),
             session_match_window_minutes=_int("SESSION_MATCH_WINDOW_MINUTES", 15),
-            debug_print_tokens=_optional("DEBUG_PRINT_TOKENS", "").lower() in ("1", "true", "yes"),
         )

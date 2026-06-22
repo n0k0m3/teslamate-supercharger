@@ -1,24 +1,17 @@
-"""Tesla charging history API client with token refresh support."""
+"""Tesla Fleet API charging history client."""
 
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import requests
 
 logger = logging.getLogger(__name__)
 
-_HISTORY_URL = "https://www.tesla.com/teslaaccount/charging/api/history"
-_TOKEN_URL = "https://auth.tesla.com/oauth2/v3/token"
-
-_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-    "X-Tesla-User-Agent": "TeslaApp/4.36.0",
-    "Content-Type": "application/json",
-    "Origin": "https://www.tesla.com",
-    "Referer": "https://www.tesla.com/teslaaccount/charging",
-}
+_FLEET_BASE = "https://fleet-api.prd.{region}.vn.cloud.tesla.com"
+_HISTORY_PATH = "/api/1/dx/charging/history"
+_FLEET_AUTH_URL = "https://fleet-auth.prd.vn.cloud.tesla.com/oauth2/v3/token"
+_FLEET_SCOPES = "openid vehicle_device_data vehicle_cmds vehicle_charging_cmds"
 
 
 class TokenExpiredError(Exception):
@@ -29,86 +22,51 @@ class TeslaAPIError(Exception):
     pass
 
 
-def refresh_access_token(refresh_token: str) -> tuple[str, str]:
-    """Return (new_access_token, new_refresh_token)."""
+def get_fleet_access_token(client_id: str, client_secret: str, region: str) -> str:
+    """Acquire a Fleet API access token via client_credentials grant."""
+    audience = _FLEET_BASE.format(region=region)
     resp = requests.post(
-        _TOKEN_URL,
-        json={
-            "grant_type": "refresh_token",
-            "client_id": "ownerapi",
-            "refresh_token": refresh_token,
-            "scope": "openid email offline_access",
+        _FLEET_AUTH_URL,
+        data={
+            "grant_type": "client_credentials",
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "scope": _FLEET_SCOPES,
+            "audience": audience,
         },
-        headers=_HEADERS,
         timeout=30,
     )
     if not resp.ok:
-        raise TeslaAPIError(f"Token refresh failed: {resp.status_code} {resp.text[:200]}")
-    data = resp.json()
-    new_access = data["access_token"]
-    new_refresh = data.get("refresh_token", refresh_token)
-    logger.info("Access token refreshed successfully")
-    return new_access, new_refresh
+        raise TeslaAPIError(f"Fleet token request failed: {resp.status_code} {resp.text[:200]}")
+    token = resp.json()["access_token"]
+    logger.info("Fleet API access token acquired")
+    return token
 
 
 def fetch_charging_history(
     access_token: str,
-    vin: str,
-    page_size: int = 5,
+    region: str = "na",
+    page_size: int = 10,
 ) -> list[dict]:
     """
-    Fetch the most recent charging sessions for the given VIN.
+    Fetch the most recent charging sessions via Tesla Fleet API.
 
-    Returns a list of raw session dicts from the API. Field names are logged
-    on first call so callers can verify the schema against session_matcher.py.
-    Raises TokenExpiredError on 401 so callers can refresh and retry.
+    Returns a list of raw session dicts for all vehicles on the account.
+    Raises TokenExpiredError on 401 so the caller can re-acquire and retry.
     """
+    url = _FLEET_BASE.format(region=region) + _HISTORY_PATH
     resp = requests.get(
-        _HISTORY_URL,
-        params={"vin": vin, "pageNo": 1, "pageSize": page_size},
-        headers={**_HEADERS, "Authorization": f"Bearer {access_token}"},
+        url,
+        params={"pageSize": page_size},
+        headers={"Authorization": f"Bearer {access_token}"},
         timeout=30,
     )
 
     if resp.status_code == 401:
-        raise TokenExpiredError("Access token is expired")
-
-    if resp.status_code == 404:
-        logger.warning(
-            "Charging history endpoint returned 404. "
-            "The endpoint URL may have changed — check for a GraphQL alternative."
-        )
-        return []
+        raise TokenExpiredError("Fleet access token expired")
 
     if not resp.ok:
         raise TeslaAPIError(f"Charging history fetch failed: {resp.status_code} {resp.text[:200]}")
 
-    payload = resp.json()
-    logger.debug("Raw charging history response: %s", payload)
-
-    sessions = payload.get("data", payload if isinstance(payload, list) else [])
-    if sessions:
-        logger.debug("Charging session keys: %s", list(sessions[0].keys()))
-
-    return sessions
-
-
-def fetch_charging_history_with_refresh(
-    access_token: str,
-    refresh_token: str,
-    vin: str,
-) -> tuple[list[dict], str, str]:
-    """
-    Fetch charging history, transparently refreshing the access token on 401.
-
-    Returns (sessions, current_access_token, current_refresh_token).
-    The returned tokens may differ from the inputs if a refresh occurred.
-    """
-    try:
-        sessions = fetch_charging_history(access_token, vin)
-        return sessions, access_token, refresh_token
-    except TokenExpiredError:
-        logger.info("Access token expired, refreshing...")
-        new_access, new_refresh = refresh_access_token(refresh_token)
-        sessions = fetch_charging_history(new_access, vin)
-        return sessions, new_access, new_refresh
+    logger.debug("Raw charging history response: %s", resp.text[:500])
+    return resp.json().get("data", [])

@@ -3,7 +3,8 @@
 #
 # Required env vars (set in your .env file alongside docker-compose.yml):
 #   TESLAMATE_DB_PASSWORD  — same value as TeslaMate's DATABASE_PASS
-#   ENCRYPTION_KEY         — same value as TeslaMate's ENCRYPTION_KEY
+#   TESLA_CLIENT_ID        — Tesla Fleet API app client ID
+#   TESLA_CLIENT_SECRET    — Tesla Fleet API app client secret
 
 services:
   supercharger:
@@ -19,12 +20,15 @@ services:
       - DATABASE_NAME=teslamate
       - DATABASE_USER=teslamate
       - DATABASE_PASS=${TESLAMATE_DB_PASSWORD}
-      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - TESLA_CLIENT_ID=${TESLA_CLIENT_ID}
+      - TESLA_CLIENT_SECRET=${TESLA_CLIENT_SECRET}
       - MQTT_HOST=mosquitto
       - MQTT_PORT=1883
       # Optional — set if your MQTT broker requires auth:
       # - MQTT_USERNAME=
       # - MQTT_PASSWORD=
+      # Fleet API region — na (default), eu, or cn:
+      - TESLA_FLEET_REGION=na
       # Tuning — how long to wait after session complete before calling Tesla API:
       - API_FETCH_DELAY_SECONDS=30
       # How many minutes either side of the trigger time to search for a matching session:

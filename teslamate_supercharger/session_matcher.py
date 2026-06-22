@@ -8,19 +8,18 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# Field name constants — adjust here if the API returns different names.
-# Log the raw response on first run (tesla_api.py does this at DEBUG level).
-_FIELD_SESSION_ID = "chargeSessionId"
+# Fleet API field name constants.
+_FIELD_SESSION_ID = "sessionId"
 _FIELD_STOP_TIME = "chargeStopDateTime"
 _FIELD_START_TIME = "chargeStartDateTime"
 _FIELD_SITE_NAME = "siteLocationName"
-_FIELD_LOCATION_ID = "siteId"
+_FIELD_VIN = "vin"
 _FIELD_FEES = "fees"
 _FIELD_FEE_TYPE = "feeType"
 _FIELD_FEE_TOTAL = "totalDue"
 _FIELD_FEE_CURRENCY = "currencyCode"
-_FIELD_PACKAGE = "chargingPackage"
-_FIELD_ENERGY = "energyKwh"
+_FIELD_FEE_USAGE = "usageBase"
+_FIELD_FEE_UOM = "uom"
 
 _BILLABLE_FEE_TYPES = {"CHARGING", "PARKING"}
 
@@ -83,8 +82,17 @@ def extract_cost(session: dict) -> tuple[Optional[float], Optional[str]]:
     return (total if total > 0 else None, currency)
 
 
+def extract_energy_kwh(session: dict) -> Optional[float]:
+    """Return kWh delivered, summed from CHARGING fee usageBase."""
+    total = 0.0
+    for fee in session.get(_FIELD_FEES, []):
+        if fee.get(_FIELD_FEE_TYPE) == "CHARGING" and fee.get(_FIELD_FEE_UOM) == "kwh":
+            total += fee.get(_FIELD_FEE_USAGE, 0.0)
+    return total if total > 0 else None
+
+
 def extract_session_fields(session: dict) -> dict:
-    """Extract structured fields from a raw API session dict."""
+    """Extract structured fields from a raw Fleet API session dict."""
     stop = _parse_dt(session.get(_FIELD_STOP_TIME))
     start = _parse_dt(session.get(_FIELD_START_TIME))
     duration = None
@@ -93,15 +101,12 @@ def extract_session_fields(session: dict) -> dict:
 
     cost_amount, cost_currency = extract_cost(session)
 
-    pkg = session.get(_FIELD_PACKAGE) or {}
-    energy_kwh = pkg.get(_FIELD_ENERGY)
-
     return {
-        "tesla_session_id": session.get(_FIELD_SESSION_ID),
+        "tesla_session_id": str(session.get(_FIELD_SESSION_ID)) if session.get(_FIELD_SESSION_ID) else None,
         "session_date": stop,
         "supercharger_name": session.get(_FIELD_SITE_NAME),
-        "supercharger_location_id": str(session.get(_FIELD_LOCATION_ID)) if session.get(_FIELD_LOCATION_ID) else None,
-        "energy_kwh": energy_kwh,
+        "supercharger_location_id": None,
+        "energy_kwh": extract_energy_kwh(session),
         "cost_amount": cost_amount,
         "cost_currency": cost_currency,
         "duration_minutes": duration,

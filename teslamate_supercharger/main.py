@@ -4,8 +4,8 @@ teslamate-supercharger daemon entry point.
 Startup sequence:
 1. Load config from env
 2. Init DB pool, run schema migration
-3. Decrypt TeslaMate tokens
-4. Load car VINs
+3. Acquire Fleet API access token (client_credentials)
+4. Load car VINs from TeslaMate DB
 5. Backfill any recent missed sessions
 6. Start MQTT listener (blocks forever)
 """
@@ -18,12 +18,10 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Optional
 
-from . import config as cfg_module
 from . import db, session_matcher
 from .config import Config, ConfigError
-from .crypto import decrypt_token
 from .mqtt_client import MQTTClient
-from .tesla_api import TeslaAPIError, fetch_charging_history_with_refresh
+from .tesla_api import TeslaAPIError, TokenExpiredError, fetch_charging_history, get_fleet_access_token
 
 logging.basicConfig(
     level=logging.INFO,
@@ -35,8 +33,7 @@ logger = logging.getLogger(__name__)
 class Daemon:
     def __init__(self, cfg: Config):
         self.cfg = cfg
-        self.access_token: Optional[str] = None
-        self.refresh_token: Optional[str] = None
+        self.fleet_access_token: Optional[str] = None
         self.car_vins: dict[int, str] = {}
         self._executor = ThreadPoolExecutor(max_workers=2)
 
@@ -44,15 +41,12 @@ class Daemon:
     # Startup
     # ------------------------------------------------------------------
 
-    def _load_tokens(self) -> None:
-        with db.get_conn() as conn:
-            enc_access, enc_refresh = db.get_encrypted_tokens(conn)
-        self.access_token = decrypt_token(enc_access, self.cfg.encryption_key)
-        self.refresh_token = decrypt_token(enc_refresh, self.cfg.encryption_key)
-        logger.info("Tesla tokens decrypted successfully")
-        if self.cfg.debug_print_tokens:
-            logger.info("DEBUG access_token=%s", self.access_token)
-            logger.info("DEBUG refresh_token=%s", self.refresh_token)
+    def _init_fleet_token(self) -> None:
+        self.fleet_access_token = get_fleet_access_token(
+            self.cfg.tesla_client_id,
+            self.cfg.tesla_client_secret,
+            self.cfg.tesla_fleet_region,
+        )
 
     def _load_car_vins(self) -> None:
         with db.get_conn() as conn:
@@ -80,6 +74,15 @@ class Daemon:
     # Session fetch + store (runs in thread pool)
     # ------------------------------------------------------------------
 
+    def _fetch_sessions(self) -> list[dict]:
+        """Fetch charging history, re-acquiring the token once on 401."""
+        try:
+            return fetch_charging_history(self.fleet_access_token, self.cfg.tesla_fleet_region)
+        except TokenExpiredError:
+            logger.info("Fleet token expired, re-acquiring...")
+            self._init_fleet_token()
+            return fetch_charging_history(self.fleet_access_token, self.cfg.tesla_fleet_region)
+
     def _fetch_and_store(
         self,
         car_id: int,
@@ -95,15 +98,14 @@ class Daemon:
             return
 
         try:
-            sessions, self.access_token, self.refresh_token = fetch_charging_history_with_refresh(
-                self.access_token, self.refresh_token, vin
-            )
+            all_sessions = self._fetch_sessions()
         except TeslaAPIError as exc:
             logger.error("Car %d: API error fetching charging history: %s", car_id, exc)
             return
 
+        sessions = [s for s in all_sessions if s.get("vin") == vin]
         if not sessions:
-            logger.warning("Car %d: no charging sessions returned from Tesla API", car_id)
+            logger.warning("Car %d: no charging sessions found for VIN %s", car_id, vin[:8] + "***")
             return
 
         session = session_matcher.find_matching_session(
@@ -123,7 +125,6 @@ class Daemon:
             fields["energy_kwh"] or 0,
         )
 
-        # Find linked charging_processes row
         cp_id = charging_process_hint
         if cp_id is None and fields["session_date"]:
             with db.get_conn() as conn:
@@ -169,7 +170,7 @@ class Daemon:
         db.init_pool(self.cfg)
         db.ensure_schema()
 
-        self._load_tokens()
+        self._init_fleet_token()
         self._load_car_vins()
         self._backfill()
 

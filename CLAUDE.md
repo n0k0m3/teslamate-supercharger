@@ -19,7 +19,7 @@ cp .env.example .env
 uv run python -m teslamate_supercharger.main
 ```
 
-Required env vars: `DATABASE_HOST`, `DATABASE_PASS`, `ENCRYPTION_KEY`.  
+Required env vars: `DATABASE_HOST`, `DATABASE_PASS`, `TESLA_CLIENT_ID`, `TESLA_CLIENT_SECRET`.  
 All others have defaults (see `config.py`).
 
 ## Docker
@@ -51,14 +51,13 @@ On startup, the daemon also backfills any `charging_processes` rows from the las
 - **`main.py`** — `Daemon` class orchestrates startup and the MQTT→API→DB pipeline. `main()` is the entry point.
 - **`config.py`** — All configuration comes from environment variables. `Config.from_env()` raises `ConfigError` on missing required vars.
 - **`mqtt_client.py`** — Subscribes to `teslamate/cars/+/{charging_state,fast_charger_present,charger_power}`. Maintains per-car state dict to detect the `Charging → Complete` transition. Fires callback only when `fast_charger_present=true`.
-- **`tesla_api.py`** — Calls `https://www.tesla.com/teslaaccount/charging/api/history` (owner API, returns `{"code":200,"data":[...]}` — see `charging.json` for a sample response). Handles 401 by refreshing via `https://auth.tesla.com/oauth2/v3/token` and retrying once. Requires browser-like headers (`Origin`, `Referer`) or Cloudflare will return 403.
+- **`tesla_api.py`** — Acquires a Fleet API token via `client_credentials` grant from `fleet-auth.prd.vn.cloud.tesla.com` using `TESLA_CLIENT_ID`/`TESLA_CLIENT_SECRET`. Calls `GET /api/1/dx/charging/history` on `fleet-api.prd.{region}.vn.cloud.tesla.com`; returns all sessions for the account — VIN filtering is done client-side. Token lifetime is 8h; re-acquired on 401. See `charging_fleet.json` for a sample response.
 - **`session_matcher.py`** — Maps raw API response fields to DB columns. Field name constants (`_FIELD_*`) are defined at the top; update them if the Tesla API changes its response schema. Cost is summed from `fees[]` entries where `feeType` is `CHARGING` or `PARKING`.
 - **`db.py`** — PostgreSQL via `psycopg2` thread-safe connection pool. `ensure_schema()` runs `CREATE TABLE IF NOT EXISTS supercharger_sessions` and `ALTER TABLE charging_processes ADD COLUMN IF NOT EXISTS cost` on every startup — safe to re-run.
-- **`crypto.py`** — Decrypts TeslaMate's `private.tokens` table (AES-GCM-256, `cloak_ecto` format). Tries UTF-8 key derivation first, then base64-decoded key derivation as fallback. The `ENCRYPTION_KEY` must match TeslaMate's.
+- **`crypto.py`** — Unused since switching to Fleet API auth. Kept for reference; can be removed.
 
 ### Key coupling points with TeslaMate
 
-- Reads `private.tokens` (access/refresh tokens encrypted by TeslaMate)
 - Reads `cars` table for VINs
 - Reads and writes `charging_processes` table (adds `cost` column, links sessions by `end_date`)
 - Creates its own `supercharger_sessions` table with a FK to `charging_processes`
