@@ -46,10 +46,11 @@ def get_fleet_access_token(client_id: str, client_secret: str, region: str) -> s
 def fetch_charging_history(
     access_token: str,
     region: str = "na",
+    page_no: int = 1,
     page_size: int = 10,
 ) -> list[dict]:
     """
-    Fetch the most recent charging sessions via Tesla Fleet API.
+    Fetch one page of charging sessions via Tesla Fleet API.
 
     Returns a list of raw session dicts for all vehicles on the account.
     Raises TokenExpiredError on 401 so the caller can re-acquire and retry.
@@ -57,7 +58,7 @@ def fetch_charging_history(
     url = _FLEET_BASE.format(region=region) + _HISTORY_PATH
     resp = requests.get(
         url,
-        params={"pageSize": page_size},
+        params={"pageNo": page_no, "pageSize": page_size},
         headers={"Authorization": f"Bearer {access_token}"},
         timeout=30,
     )
@@ -70,3 +71,23 @@ def fetch_charging_history(
 
     logger.debug("Raw charging history response: %s", resp.text[:500])
     return resp.json().get("data", [])
+
+
+def fetch_all_charging_history(
+    access_token: str,
+    region: str = "na",
+    page_size: int = 50,
+) -> list[dict]:
+    """Fetch all pages of charging history, returning every session."""
+    all_sessions: list[dict] = []
+    page = 1
+    while True:
+        batch = fetch_charging_history(access_token, region, page_no=page, page_size=page_size)
+        if not batch:
+            break
+        all_sessions.extend(batch)
+        logger.info("Fleet API: fetched page %d (%d sessions so far)", page, len(all_sessions))
+        if len(batch) < page_size:
+            break
+        page += 1
+    return all_sessions
