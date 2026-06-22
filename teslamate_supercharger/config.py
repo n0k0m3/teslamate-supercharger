@@ -46,6 +46,7 @@ class Config:
 
     api_fetch_delay_seconds: int
     session_match_window_minutes: int
+    debug_print_tokens: bool
 
     @classmethod
     def from_env(cls) -> Config:
@@ -62,4 +63,5 @@ class Config:
             encryption_key=_require("ENCRYPTION_KEY"),
             api_fetch_delay_seconds=_int("API_FETCH_DELAY_SECONDS", 30),
             session_match_window_minutes=_int("SESSION_MATCH_WINDOW_MINUTES", 15),
+            debug_print_tokens=_optional("DEBUG_PRINT_TOKENS", "").lower() in ("1", "true", "yes"),
         )

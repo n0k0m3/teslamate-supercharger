@@ -50,6 +50,9 @@ class Daemon:
         self.access_token = decrypt_token(enc_access, self.cfg.encryption_key)
         self.refresh_token = decrypt_token(enc_refresh, self.cfg.encryption_key)
         logger.info("Tesla tokens decrypted successfully")
+        if self.cfg.debug_print_tokens:
+            logger.info("DEBUG access_token=%s", self.access_token)
+            logger.info("DEBUG refresh_token=%s", self.refresh_token)
 
     def _load_car_vins(self) -> None:
         with db.get_conn() as conn:
