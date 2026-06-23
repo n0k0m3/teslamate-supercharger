@@ -36,7 +36,7 @@ The data flow on each Supercharger session:
 
 ```
 MQTT (TeslaMate publishes car state)
-  → MQTTClient detects charging_state: Charging/Starting → Complete while fast_charger_present=true
+  → MQTTClient detects charging_state: Charging/Starting → Complete/Stopped/Disconnected
   → Daemon._on_supercharge_complete(car_id) [dispatched to ThreadPoolExecutor after API_FETCH_DELAY_SECONDS]
   → tesla_api.fetch_charging_history() [Fleet API, page 1, filters by VIN client-side]
   → session_matcher.find_matching_session() [matches by stop time within SESSION_MATCH_WINDOW_MINUTES]
@@ -59,11 +59,11 @@ docker compose run --rm supercharger python -m teslamate_supercharger.backfill
 - **`main.py`** — `Daemon` class orchestrates startup and the MQTT→API→DB pipeline. `main()` is the entry point.
 - **`backfill.py`** — Standalone one-shot script (`python -m teslamate_supercharger.backfill`). Fetches all pages of Fleet API history and upserts every session. Safe to re-run.
 - **`config.py`** — All configuration comes from environment variables. `Config.from_env()` raises `ConfigError` on missing required vars.
-- **`mqtt_client.py`** — Subscribes to `teslamate/cars/+/{charging_state,fast_charger_present,charger_power}`. Maintains per-car state dict to detect the `Charging → Complete` transition. Fires callback only when `fast_charger_present=true`.
+- **`mqtt_client.py`** — Subscribes to `teslamate/cars/+/{charging_state,charger_power}`. Maintains per-car state dict to detect `Charging/Starting → Complete/Stopped/Disconnected` transitions. Whether the session was a Supercharger is determined by the Fleet API match, not MQTT.
 - **`tesla_api.py`** — Acquires a Fleet API token via `client_credentials` grant from `fleet-auth.prd.vn.cloud.tesla.com` using `TESLA_CLIENT_ID`/`TESLA_CLIENT_SECRET`. Token lifetime is 8h; re-acquired on 401. `fetch_charging_history()` fetches one page; `fetch_all_charging_history()` paginates all results. See `charging_fleet.json` for a sample response.
 - **`session_matcher.py`** — Maps Fleet API response fields to DB columns. Field name constants (`_FIELD_*`) are defined at the top; update if the API schema changes. Cost is summed from `fees[]` entries where `feeType` is `CHARGING` or `PARKING`. Energy is derived from `usageBase` where `uom=kwh`.
 - **`db.py`** — PostgreSQL via `psycopg2` thread-safe connection pool. `ensure_schema()` runs `CREATE TABLE IF NOT EXISTS supercharger_sessions` and `ALTER TABLE charging_processes ADD COLUMN IF NOT EXISTS cost` on every startup — safe to re-run.
-- **`crypto.py`** — Unused since switching to Fleet API auth. Can be deleted.
+- **`crypto.py`** — Deleted. Was used for web API token decryption; no longer needed.
 
 ### Key coupling points with TeslaMate
 
@@ -74,7 +74,7 @@ docker compose run --rm supercharger python -m teslamate_supercharger.backfill
 ## Backlog
 
 **Reliability**
-- `crypto.py` is dead code — delete it
+- ~~`crypto.py` is dead code — delete it~~ done
 - Startup backfill window is hardcoded to 24h — if daemon is down longer, sessions are silently missed; make `BACKFILL_LOOKBACK_HOURS` a config var
 - Verify multi-car behaviour: `seen_car_ids` in `_backfill()` deduplicates by car, which is correct, but worth an end-to-end test
 

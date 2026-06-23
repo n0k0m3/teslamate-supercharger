@@ -75,15 +75,6 @@ def ensure_schema() -> None:
     logger.info("Schema verified/migrated")
 
 
-def get_encrypted_tokens(conn) -> tuple[bytes, bytes]:
-    with conn.cursor() as cur:
-        cur.execute("SELECT access, refresh FROM private.tokens LIMIT 1")
-        row = cur.fetchone()
-    if row is None:
-        raise RuntimeError("No token row found in private.tokens")
-    return bytes(row[0]), bytes(row[1])
-
-
 def get_car_vins(conn) -> dict[int, str]:
     """Returns {car_id: vin} for all cars."""
     with conn.cursor() as cur:
