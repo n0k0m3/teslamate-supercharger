@@ -2,8 +2,9 @@
 MQTT subscriber with per-car state machine.
 
 Subscribes to TeslaMate's MQTT topics and triggers a callback when a
-Supercharger session completes (charging_state transitions to "Complete"
-while fast_charger_present was "true").
+charging session ends (charging_state transitions from Charging/Starting
+to Complete, Stopped, or Disconnected).  Whether it was a Supercharger
+session is determined later by matching against the Fleet API response.
 """
 
 from __future__ import annotations
@@ -17,11 +18,11 @@ logger = logging.getLogger(__name__)
 
 _SUBSCRIBE_TOPICS = [
     "teslamate/cars/+/charging_state",
-    "teslamate/cars/+/fast_charger_present",
     "teslamate/cars/+/charger_power",
 ]
 
 _ACTIVE_CHARGING_STATES = {"Charging", "Starting"}
+_SESSION_END_STATES = {"Complete", "Stopped", "Disconnected"}
 
 
 class MQTTClient:
@@ -37,7 +38,7 @@ class MQTTClient:
         self._port = port
         self._on_supercharge_complete = on_supercharge_complete
 
-        # {car_id: {"charging_state": str, "fast_charger_present": str, ...}}
+        # {car_id: {"charging_state": str, ...}}
         self._car_state: dict[int, dict[str, str]] = {}
 
         self._client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
@@ -79,14 +80,14 @@ class MQTTClient:
 
         if (
             field == "charging_state"
-            and value == "Complete"
+            and value in _SESSION_END_STATES
             and prev_charging_state in _ACTIVE_CHARGING_STATES
-            and state.get("fast_charger_present") == "true"
         ):
             logger.info(
-                "Car %d: Supercharger session complete (was %s, fast_charger_present=true)",
+                "Car %d: charging session ended (%s → %s), checking Fleet API",
                 car_id,
                 prev_charging_state,
+                value,
             )
             try:
                 self._on_supercharge_complete(car_id)
